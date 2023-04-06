@@ -1,0 +1,60 @@
+version: '3.7'
+
+services:
+  db:
+    image: postgres:14.2-alpine
+    ports:
+     - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      mainappsnetwork:
+
+  apps:
+    image: mainapps:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: mainapps_dev
+    volumes:
+      - .:/mainapps
+    depends_on:
+      - db
+    environment:
+      - DEBUG=true
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+    command: sh -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+    networks:
+      mainappsnetwork:
+
+  test:
+    image: test_mainapps:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+    container_name: mainapps_tests
+    depends_on:
+      - db
+    environment:
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+    command: |-
+        sh -c '
+        cd /mainapps
+        coverage erase
+        coverage run manage.py test --settings=mainapps.settings.dev
+        coverage report'
+    networks:
+      mainappsnetwork:
+
+networks:
+  mainappsnetwork:

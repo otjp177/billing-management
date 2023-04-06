@@ -1,0 +1,17 @@
+# this allows dockerfile to *know* about build arguments
+
+FROM python:3.9.15-slim-buster
+
+
+ENV PYTHONUNBUFFERED 1
+
+RUN apt-get update
+
+RUN apt-get install -y libpq-dev libpq5 gcc git build-essential
+
+COPY requirements* /mainapps/
+
+WORKDIR /mainapps
+
+RUN pip install --upgrade pip && \
+    pip install -r requirements-dev.txt
